@@ -1,0 +1,31 @@
+#include<opencv2\\opencv.hpp>
+#include<stdio.h>
+
+#pragma comment(lib,"opencv_world454d.lib")
+
+using namespace cv;  //名前空間　これを書くとcv:: std::とかを省略できる
+
+int main(void)
+{
+	Mat frame;   //Mat型＝画像ファイルを格納するもの(デジタルの画像ファイルを、cv::Mat型に入れると、画素値の行列として格納される)
+	VideoCapture cap(0);
+
+	if (!cap.isOpened()) {      //!をつければ否定文になる　カメラがオンじゃなければエラー
+		printf("Camera Open Error\n");
+		return -1;
+	}
+	 
+	while (1) {
+		cap >> frame;     //＞＞は入力演算子（代入みたいな感じ）Mat型のframeにカメラの映像を代入する
+
+		cvtColor(frame, frame, COLOR_BGR2GRAY);   //frameという画像データをモノクロに変換してframeに入れなおした
+
+		imshow("cap", frame);    //imshow("ウィンドウのタイトルに表示される文字",表示させたい、cv::Mat型を指定)
+
+		int key = waitKey(1);
+		if (key == 'q') break;
+	}
+	destroyAllWindows();
+	return 0;
+}
+
