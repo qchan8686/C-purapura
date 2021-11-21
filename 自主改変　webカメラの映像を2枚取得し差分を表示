@@ -8,52 +8,50 @@ using namespace cv;  //名前空間　これを書くとcv:: std::とかを省�
 
 int main(void)
 {
-	Mat frame1,frame2, difframe, thrframe;   //Mat型＝画像ファイルを格納するもの(デジタルの画像ファイルを、cv::Mat型に入れると、画素値の行列として格納される)
+	Mat frame1, frame2, difframe, thrframe;   //Mat型＝画像ファイルを格納するもの(デジタルの画像ファイルを、cv::Mat型に入れると、画素値の行列として格納される)
 	VideoCapture cap(0);
 
 	if (!cap.isOpened()) {      //!をつければ否定文になる　カメラがオンじゃなければエラー
 		printf("Camera Open Error\n");
 		return -1;
 	}
-	 
+
 	
-		cap >> frame1;     //＞＞は入力演算子（代入みたいな感じ）Mat型のframeにカメラの映像を代入する
+	cap >> frame1;     //＞＞は入力演算子（代入みたいな感じ?）Mat型のframeにカメラの映像を代入する
 
-		cvtColor(frame1, frame1, COLOR_BGR2GRAY);   //frameという画像データをモノクロに変換してframeに入れなおした
-		
-		//while (1) {
+	cvtColor(frame1, frame1, COLOR_BGR2GRAY);   //frameという画像データをモノクロに変換してframeに入れなおした
 
-			imshow("cap", frame1);    //imshow("ウィンドウのタイトルに表示される文字",表示させたい、cv::Mat型を指定)
+	while (1) {
 
-
-			//int key = 
-			waitKey(0);
-			//if (key == 'q') break;
-		//}
+	imshow("cap", frame1);    //imshow("ウィンドウのタイトルに表示される文字",表示させたい、cv::Mat型を指定)
 
 
-		//Sleep(10000);  //Sleep だと識別子が定義されてないとなる　なぜ？→#include<windows.h>を書かないとダメ　_sleepはセキュリティ面かなんかでエラー出るから使えないぽい
+	int key = waitKey(1);
+	if (key == 'q') break;
+}
 
 
-		cap >> frame2;
-		
-		cvtColor(frame2, frame2, COLOR_BGR2GRAY);
+//Sleep(10000);  //Sleep だと識別子が定義されてないとなる　なぜ？→#include<windows.h>を書かないとダメ　_sleepはセキュリティ面かなんかでエラー出るから使えないぽい
 
-		while (1) {
+	
+	cap >> frame2;
 
-			imshow("cap", frame2);    //imshow("ウィンドウのタイトルに表示される文字",表示させたい、cv::Mat型を指定)
+	cvtColor(frame2, frame2, COLOR_BGR2GRAY);
+
+	while (1) {
+
+		imshow("cap", frame2);    //imshow("ウィンドウのタイトルに表示される文字",表示させたい、cv::Mat型を指定)
+
+		int key = waitKey(1);
+		if (key == 'q') break;
+	}
+
+	absdiff(frame1, frame2, difframe); //画像の画素の差分を求める（入力1,入力2,出力名）
+
+	threshold(difframe, thrframe, 30, 255, THRESH_BINARY);  //二値化(入力配列,出力配列,閾値,最大濃度の値,閾値処理の種類（複数ある）（今回は30以上は白にしたいから最大濃度の値を255、処理の種類を”閾値以上は最大濃度にする”処理：THRESH_BINARYを書いた）)
 
 
-			int key = waitKey(1);
-			if (key == 'q') break;
-		}
-
-		absdiff(frame1, frame2, difframe); //画像の画素の差分を求める（入力1,入力2,出力名）
-
-		threshold(difframe, thrframe,30, 255, THRESH_BINARY);  //二値化(入力配列,出力配列,閾値,最大濃度の値,閾値処理の種類（複数ある）（今回は30以上は白にしたいから最大濃度の値を255、処理の種類を”閾値以上は最大濃度にする”処理：THRESH_BINARYを書いた）)
-
-
-		while (1) {
+	while (1) {
 
 		imshow("cap", thrframe);    //imshow("ウィンドウのタイトルに表示される文字",表示させたい、cv::Mat型を指定)
 
@@ -64,4 +62,3 @@ int main(void)
 	destroyAllWindows();
 	return 0;
 }
-
