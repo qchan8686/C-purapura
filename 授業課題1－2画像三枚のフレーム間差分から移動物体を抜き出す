@@ -10,7 +10,7 @@ using namespace cv;  //名前空間　これを書くとcv:: std::とかを省�
 
 int main(void)
 {
-	Mat frame1, frame2,frame3, difframe, difframe2, thrframe, thrframe2, andframe;   //Mat型＝画像ファイルを格納するもの(デジタルの画像ファイルを、cv::Mat型に入れると、画素値の行列として格納される)
+	Mat frame1, frame2, frame3, difframe, difframe2, thrframe, thrframe2, andframe;   //Mat型＝画像ファイルを格納するもの(デジタルの画像ファイルを、cv::Mat型に入れると、画素値の行列として格納される)
 	VideoCapture cap(0);
 
 	if (!cap.isOpened()) {      //!をつければ否定文になる　カメラがオンじゃなければエラー
@@ -23,39 +23,43 @@ int main(void)
 
 	cvtColor(frame1, frame1, COLOR_BGR2GRAY);   //frameという画像データをモノクロに変換してframeに入れなおした
 
+	
+
+	cap >> frame2;
+
+	cvtColor(frame2, frame2, COLOR_BGR2GRAY);
+
+
 	while (1) {
+	
+	
+	absdiff(frame1, frame2, difframe); //画像の画素の差分を求める（入力1,入力2,出力名）
 
-		cap >> frame2;
+	threshold(difframe, thrframe, 30, 255, THRESH_BINARY);  //二値化(入力配列,出力配列,閾値,最大濃度の値,閾値処理の種類（複数ある）（今回は30以上は白にしたいから最大濃度の値を255、処理の種類を”閾値以上は最大濃度にする”処理：THRESH_BINARYを書いた）)
 
-		cvtColor(frame2, frame2, COLOR_BGR2GRAY);
+	
 
-		absdiff(frame1, frame2, difframe); //画像の画素の差分を求める（入力1,入力2,出力名）
+	cap >> frame3;
 
-		threshold(difframe, thrframe, 30, 255, THRESH_BINARY);  //二値化(入力配列,出力配列,閾値,最大濃度の値,閾値処理の種類（複数ある）（今回は30以上は白にしたいから最大濃度の値を255、処理の種類を”閾値以上は最大濃度にする”処理：THRESH_BINARYを書いた）)
+	cvtColor(frame3, frame3, COLOR_BGR2GRAY);
 
+	absdiff(frame2, frame3, difframe2);
 
-
-		cap >> frame3;
-
-		cvtColor(frame3, frame3, COLOR_BGR2GRAY);
-
-		absdiff(frame2, frame3, difframe2);
-
-		threshold(difframe2, thrframe2, 30, 255, THRESH_BINARY);
+	threshold(difframe2, thrframe2, 30, 255, THRESH_BINARY);
 
 
 
-		bitwise_and(thrframe, thrframe2, andframe);
+	bitwise_and(thrframe, thrframe2, andframe);
 
 
-		imshow("cap", andframe);    //imshow("ウィンドウのタイトルに表示される文字",表示させたい、cv::Mat型を指定)
+	imshow("cap", andframe);    //imshow("ウィンドウのタイトルに表示される文字",表示させたい、cv::Mat型を指定)
 
-		frame1 = frame2.clone();
-		frame2 = frame3.clone();
+	frame1 = frame2.clone();
+	frame2 = frame3.clone();
 
 
-		int key = waitKey(1);
-		if (key == 'q') break;
+	int key = waitKey(1);
+	if (key == 'q') break;
 	}
 
 
