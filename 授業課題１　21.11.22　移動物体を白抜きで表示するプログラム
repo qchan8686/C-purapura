@@ -30,7 +30,9 @@ int main(void)
 			absdiff(frame1, frame2, difframe); //画像の画素の差分を求める（入力1,入力2,出力名）
 
 			threshold(difframe, thrframe, 30, 255, THRESH_BINARY);  //二値化(入力配列,出力配列,閾値,最大濃度の値,閾値処理の種類（複数ある）（今回は30以上は白にしたいから最大濃度の値を255、処理の種類を”閾値以上は最大濃度にする”処理：THRESH_BINARYを書いた）)
-
+			
+			//threshold(diff, diff, 0, 255, THRESH_BINARY | THRESH_OTSU); 　// 先生のプログラムにあった　大津の二値化:適切な閾値を選択してくれる　普通の二値化の後にやると画像のノイズが軽減される？（モノクロ画像の時のみ使える）
+		
 
 			imshow("cap", thrframe);    //imshow("ウィンドウのタイトルに表示される文字",表示させたい、cv::Mat型を指定)
 
