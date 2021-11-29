@@ -1,0 +1,60 @@
+#include<opencv2\\opencv.hpp>
+#include<stdio.h>
+#include<windows.h>
+
+#pragma comment(lib,"opencv_world454d.lib")
+
+//#pragma warning(disable : 4819)
+
+using namespace cv;  //名前空間　これを書くとcv:: std::とかを省略できる
+
+int main(void)
+{
+	Mat back, frame, difframe, thrframe;   //Mat型＝画像ファイルを格納するもの(デジタルの画像ファイルを、cv::Mat型に入れると、画素値の行列として格納される)
+	VideoCapture cap(0);
+
+	if (!cap.isOpened()) {      //!をつければ否定文になる　カメラがオンじゃなければエラー
+		printf("Camera Open Error\n");
+		return -1;
+	}
+
+
+	cap >> back;     //＞＞は入力演算子（代入みたいな感じ）Mat型のframeにカメラの映像を代入する
+
+	cvtColor(back, back, COLOR_BGR2GRAY);   //frameという画像データをモノクロに変換してframeに入れなおした
+
+
+	while (1) {
+
+
+
+		cap >> frame;
+
+
+		cvtColor(frame, frame, COLOR_BGR2GRAY);
+
+		absdiff(frame,back, difframe); //画像と画素の差分を求める（入力1,入力2,出力名）
+
+		//threshold(difframe, thrframe, 30, 255, THRESH_BINARY);  //二値化(入力配列,出力配列,閾値,最大濃度の値,閾値処理の種類（複数ある）（今回は30以上は白にしたいから最大濃度の値を255、処理の種類を”閾値以上は最大濃度にする”処理：THRESH_BINARYを書いた）)
+
+		threshold(difframe, thrframe, 0, 255, THRESH_BINARY | THRESH_OTSU);　　//大津の二値化：閾値を自動判別してくれるためノイズが少ない
+
+
+
+		imshow("back", back);
+		imshow("frame", frame);
+		imshow("cap", thrframe);    //imshow("ウィンドウのタイトルに表示される文字",表示させたい、cv::Mat型を指定)
+
+
+		int key = waitKey(1);
+		if (key == 'q') break;
+		else if (key == 'b') {
+			cap >> back;
+			cvtColor(back, back, COLOR_BGR2GRAY);
+		}
+	}
+
+
+		destroyAllWindows();
+		return 0;
+}
