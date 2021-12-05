@@ -1,0 +1,44 @@
+#include<opencv2\\opencv.hpp>
+#include<stdio.h>
+
+#pragma comment(lib,"opencv_world454d.lib")
+
+using namespace cv;  //名前空間　これを書くとcv:: std::とかを省略できる
+
+int main(void)
+{
+	
+
+	Mat frame;   //Mat型＝画像ファイルを格納するもの(デジタルの画像ファイルを、cv::Mat型に入れると、画素値の行列として格納される)
+	VideoCapture cap(0);
+
+	if (!cap.isOpened()) {      //!をつければ否定文になる　カメラがオンじゃなければエラー
+		printf("Camera Open Error\n");
+		return -1;
+	}
+
+	CascadeClassifier cascade;  //カスケードファイル使う準備みたいな
+	cascade.load("D:/須藤ゼミ/haarcascade_frontalface_alt.xml"); //正面顔情報が入っているカスケードファイル読み込み
+	std::vector<Rect> faces; //輪郭情報を格納する場所　今回はfases
+
+	
+
+
+	while (1) {
+
+		cap >> frame;     //＞＞は入力演算子（代入みたいな感じ）Mat型のframeにカメラの映像を代入する
+
+		cascade.detectMultiScale(frame, faces, 1.1, 3, 0, Size(20, 20)); //カスケードファイルに基づいて顔を検知する．検知した顔情報をベクトルfacesに格納
+		for (int i = 0; i < faces.size(); i++) //検出した顔の個数"faces.size()"分ループを行う
+		{
+			rectangle(frame, Point(faces[i].x, faces[i].y), Point(faces[i].x + faces[i].width, faces[i].y + faces[i].height), Scalar(0, 0, 255), 3, LINE_AA); //検出した顔を赤色矩形で囲む
+		}
+
+		imshow("cap", frame);    //imshow("ウィンドウのタイトルに表示される文字",表示させたい、cv::Mat型を指定)
+
+		int key = waitKey(1);
+		if (key == 'q') break;
+	}
+	destroyAllWindows();
+	return 0;
+}
