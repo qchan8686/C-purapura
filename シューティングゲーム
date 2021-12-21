@@ -1,0 +1,451 @@
+#include "DxLib.h"
+#include <math.h>
+
+#define SHOT 20
+
+// プログラムは WinMain から始まります
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+	int BallX, BallY, BallGraph;
+	int Bw, Bh, Sw, Sh;
+	int SikakuX, SikakuY, SikakuGraph, SikakuMuki;
+	int SikakuDamageFlag, SikakuDamageCounter, SikakuDamageGraph;
+	int ShotX[SHOT], ShotY[SHOT], ShotFlag[SHOT], ShotGraph;
+	int SikakuW, SikakuH, ShotW, ShotH;
+	int ShotBFlag;
+	int i;
+	double ETamaX, ETamaY;
+	int ETamaFlag;
+	double ETamaSx, ETamaSy;
+	int ETamaW, ETamaH, ETamaGraph;
+	int ETamaCounter;
+	int Score;
+	int Life;
+	unsigned int Color;
+	int DrawWidth;
+
+	ChangeWindowMode(TRUE);
+
+	// 画面モードの設定
+	SetGraphMode(640, 480, 16);
+
+	if (DxLib_Init() == -1)		// ＤＸライブラリ初期化処理
+	{
+		return -1;			// エラーが起きたら直ちに終了
+	}
+
+	// 描画先を裏画面にする
+	SetDrawScreen(DX_SCREEN_BACK);
+
+
+	// ボール君のグラフィックをメモリにロード＆表示座標をセット
+	BallGraph = LoadGraph("Ball.png");
+	BallX = 288; BallY = 400;
+
+	// 四角君のグラフィックをメモリにロード＆表示座標をセット
+	SikakuGraph = LoadGraph("Sikaku.png");
+	SikakuX = 0; SikakuY = 50;
+
+	// 四角君のダメージ時のグラフィックをメモリにロード
+	SikakuDamageGraph = LoadGraph("SikakuDam.png");
+
+	// 四角君が顔を歪めているかどうかの変数に歪めていない(0)を代入
+	SikakuDamageFlag = 0;
+
+	// 敵弾のグラフィックをロード
+	ETamaGraph = LoadGraph("EShot.png");
+
+	// 敵弾のグラフィックサイズを得る
+	GetGraphSize(ETamaGraph, &ETamaW, &ETamaH);
+
+	// 敵弾が飛んでいるかどうかを保持する変数に飛んでいない(０)を代入
+	ETamaFlag = 0;
+
+	// 敵が弾を撃つタイミングを取るための計測用変数に０を代入
+	ETamaCounter = 0;
+
+	//自弾のグラフィックをメモリにロード
+	ShotGraph = LoadGraph("Shot.png");
+
+	// 弾が画面上に存在していないを意味する０を代入しておく
+	for (i = 0; i < SHOT; i++)
+	{
+		ShotFlag[i] = 0;
+	}
+
+	//前のふれーむでショットボタンが押されたかどうかを保存
+	ShotBFlag = 0;
+
+	//移動方向右が１左が0
+	SikakuMuki = 1;
+
+	// 弾と四角君のグラフィックのサイズを得る
+	GetGraphSize(ShotGraph, &ShotW, &ShotH);
+	GetGraphSize(SikakuGraph, &SikakuW, &SikakuH);
+
+	// ボール君と弾の画像のサイズを得る
+	GetGraphSize(BallGraph, &Bw, &Bh);
+	GetGraphSize(ShotGraph, &Sw, &Sh);
+
+	i = 0;
+	Color = GetColor(175, 238, 238);
+
+	Score = 0;
+	Life = 3;
+	
+	ChangeFont("Impact");
+	SetFontSize(64);
+	SetFontThickness(10);
+	DrawWidth = GetDrawFormatStringWidth("ShootingGame");
+	DrawFormatString((640 - DrawWidth) / 2, 176, Color, "ShootingGame");
+	
+	
+	Color = GetColor(255, 255, 255);
+
+	SetFontSize(30);
+	SetFontThickness(6);
+	DrawWidth = GetDrawFormatStringWidth("press enter to start");
+	DrawFormatString((640 - DrawWidth) / 2, 295, Color, "press enter to start");
+
+	SetFontSize(20);
+	SetFontThickness(5);
+	DrawWidth = GetDrawFormatStringWidth("move:←↑→");
+	DrawFormatString((640 - DrawWidth) / 2, 335, Color, "move:←↑→\nshot:space");
+
+	ScreenFlip();
+
+	while (CheckHitKey(KEY_INPUT_RETURN) == 0)
+	{
+
+	}
+	
+	ClearDrawScreen();
+	Color = GetColor(255, 255, 255);
+	ChangeFont("Impact");
+	SetFontSize(55);
+	SetFontThickness(10);
+	DrawWidth = GetDrawFormatStringWidth("Get 100 points");
+	DrawFormatString((640 - DrawWidth) / 2, 220, Color, "Get 100 points");
+
+	ScreenFlip();
+
+	WaitTimer(1500);
+	PlaySoundFile("bgm_coinin_3.mp3", DX_PLAYTYPE_BACK);
+
+	// 移動ルーチン
+	while (1)
+	{
+		// 画面を初期化(真っ黒にする)
+		ClearDrawScreen();
+
+		// ボール君の操作
+		{
+			//キー操作
+			if (CheckHitKey(KEY_INPUT_UP) == 1)BallY -= 3;
+			if (CheckHitKey(KEY_INPUT_DOWN) == 1)BallY += 3;
+			if (CheckHitKey(KEY_INPUT_LEFT) == 1)BallX -= 3;
+			if (CheckHitKey(KEY_INPUT_RIGHT) == 1)BallX += 3;
+
+			//スペースキーを押した場合処理を分岐
+			if (CheckHitKey(KEY_INPUT_SPACE))
+			{
+				//前フレームでショットボタンが押されているか
+				if (ShotBFlag == 0)
+				{
+					//画面上にでていない弾があるか、弾の数だけ繰り返して調べる
+					for (i = 0; i < SHOT; i++)
+					{
+						//弾iが画面上に出ていない場合はその弾を画面に出す
+						if (ShotFlag[i] == 0)
+						{
+
+							//弾iの位置セット（ボール君の中心）
+							ShotX[i] = (Bw - Sw) / 2 + BallX;
+							ShotY[i] = (Bh - Sh) / 2 + BallY;
+
+							PlaySoundFile("se_pyuun.mp3", DX_PLAYTYPE_BACK);
+
+							//弾を作り出したので存在状態を記録
+							ShotFlag[i] = 1;
+
+							break;
+						}
+					}
+				}
+
+				//前フレームでショットボタンを押されていたか保存
+				ShotBFlag = 1;
+			}
+			else
+			{
+				//ショットボタンが押されていなかった場合は
+				ShotBFlag = 0;
+			}
+
+			//はみ出し防止
+			if (BallX < 0)BallX = 0;
+			if (BallX > (640 - 64))BallX = 640 - 64;
+			if (BallY < 0)BallY = 0;
+			if (BallY > (480 - 64))BallY = 480 - 64;
+
+			// ボール君を描画
+			DrawGraph(BallX, BallY, BallGraph, FALSE);
+		}
+
+		//弾の数だけ弾を動かすルーチン
+		for (i = 0; i < SHOT; i++)
+		{
+			if (ShotFlag[i] == 1)
+			{
+				//iを16ドットずつ移動
+				ShotY[i] -= 16;
+
+				//画面外に出たら存在しないフラグ０にする
+				if (ShotY[i] < -80)
+				{
+					ShotFlag[i] = 0;
+				}
+				//自弾i描画
+				DrawGraph(ShotX[i], ShotY[i], ShotGraph, FALSE);
+			}
+		}
+		// 四角君の移動
+		{
+			//顔歪んでいるかで処理分岐
+			if (SikakuDamageFlag == 1)
+			{
+				// 顔を歪めている場合はダメージ時のグラフィックを描画する
+				DrawGraph(SikakuX, SikakuY, SikakuDamageGraph, FALSE);
+
+				//歪めている時間を測るカウンターに１を加算する
+				SikakuDamageCounter++;
+
+				// もし顔を歪め初めて ３０ フレーム経過していたら元に戻す
+				if (SikakuDamageCounter == 30)
+				{
+					SikakuDamageFlag = 0;
+				}
+			}
+			else {
+				// 四角君の座標を移動方向にずらす
+				if (SikakuMuki == 1)SikakuX += 3;
+				if (SikakuMuki == 0)SikakuX -= 3;
+
+				//はみ出し防止&方向反転
+				if (SikakuX > 576) {
+					SikakuMuki = 0;
+					SikakuX = 576;
+				}
+				if (SikakuX < 0) {
+					SikakuMuki = 1;
+					SikakuX = 0;
+				}
+				// 四角君を描画
+				DrawGraph(SikakuX, SikakuY, SikakuGraph, FALSE);
+
+				// 弾を撃つタイミングを計測するカウンターに１足す
+				ETamaCounter++;
+
+				// もしカウンター変数が６０奈良弾を撃つ
+				if (ETamaCounter == 60)
+				{
+					// 既に弾が飛んでいない状態だった場合のみ発射
+					if (ETamaFlag == 0)
+					{
+						// 弾の発射位置を設定する
+						ETamaX = SikakuX + SikakuW / 2 - ETamaW / 2;
+						ETamaY = SikakuY + SikakuH / 2 - ETamaH / 2;
+
+						// 弾の移動速度を設定する
+						{
+							double sb, sbx, sby, bx, by, sx, sy;
+
+							sx = ETamaX + ETamaW / 2;
+							sy = ETamaY + ETamaH / 2;
+
+							bx = BallX + Bw / 2;
+							by = BallY + Bh / 2;
+
+							sbx = bx - sx;
+							sby = by - sy;
+
+							// 平方根を求めるのに標準関数の sqrt を使う、
+							// これを使うには math.h をインクルードする必要がある
+							sb = sqrt(sbx * sbx + sby * sby);
+
+							// １フレーム当たり８ドット移動するようにする
+							ETamaSx = sbx / sb * 8;
+							ETamaSy = sby / sb * 8;
+						}
+
+						// 弾の状態を保持する変数に飛んでいる(１)を代入する
+						ETamaFlag = 1;
+					}
+
+					// 弾を打つタイミングを計測するための変数に０を代入
+					ETamaCounter = 0;
+				}
+			}
+		}
+
+		// 敵の弾の状態が飛んでいる場合のみ弾の移動処理を行う
+		if (ETamaFlag == 1)
+		{
+			// 弾を移動
+			ETamaX += ETamaSx;
+			ETamaY += ETamaSy;
+
+			// もし弾が画面からはみ出てしまった場合は弾の状態を飛んでいない(０)にする
+			if (ETamaY > 480 || ETamaY < 0 ||
+				ETamaX > 640 || ETamaX < 0) ETamaFlag = 0;
+
+			// 画面に描画する( ETamaGraph : 敵の弾のグラフィックのハンドル )
+			DrawGraph((int)ETamaX, (int)ETamaY, ETamaGraph, FALSE);
+		}
+
+		//敵と弾の当たり判定・弾の数だけ繰り返す
+		for (i = 0; i < SHOT; i++)
+		{
+			//弾iが存在している場合のみ次の処理にうつる
+			if (ShotFlag[i] == 1)
+			{
+				//当たり判定
+				if (((ShotX[i] > SikakuX && ShotX[i] < SikakuX + SikakuW) || (SikakuX > ShotX[i] && SikakuX < ShotX[i] + ShotW)) &&
+					((ShotY[i] > SikakuY && ShotY[i] < SikakuY + SikakuH) || (SikakuY > ShotY[i] && SikakuY < ShotY[i] + ShotH)))
+				{
+					// 接触している場合は当たった弾の存在を消す
+					
+					ShotFlag[i] = 0;
+
+					//顔歪めているかの変数を１、時間のカウンタに０を入れる
+					SikakuDamageFlag = 1;
+					SikakuDamageCounter = 0;
+
+					Score += 10;
+				}
+			}
+		}
+
+		//自機と敵弾の当たり判定
+		//敵弾が存在している場合のみ次の処理にうつる
+		if (ETamaFlag == 1)
+		{
+			//当たり判定
+			if (((ETamaX > BallX && ETamaX < BallX + Bw) || (BallX > ETamaX && BallX < ETamaX + ETamaW)) &&
+				((ETamaY > BallY && ETamaY < BallY + Bh) || (BallY > ETamaY && BallY < ETamaY + ETamaH)))
+			{
+				// 接触している場合は当たった弾の存在を消す
+				
+				ETamaFlag = 0;
+
+				Life -= 1;
+
+			}
+		}
+
+		ChangeFont("MS Sans Serif");
+		SetFontSize(22);
+		SetFontThickness(10);
+
+		DrawFormatString(8, 10, Color, "SCORE");
+		DrawWidth = GetDrawFormatStringWidth("SCORE");
+		int DrawWidth2 = GetDrawFormatStringWidth("%d",Score);
+		DrawFormatString((DrawWidth - DrawWidth2) / 2+8, 35, Color, "%d",Score);
+
+		SetFontSize(28);
+		if (Life == 3) {
+			DrawFormatString(8, 453, Color, "● ● ●");
+		}
+		else if (Life == 2) {
+			DrawFormatString(8, 453, Color, "● ●");
+		}
+		else if (Life == 1) {
+			DrawFormatString(8, 453, Color, "●");
+		}
+		else if (Life == 0) {
+			DrawFormatString(8, 453, Color, " ");
+		}
+
+
+		// 裏画面の内容を表画面にコピーする
+		ScreenFlip();
+
+
+
+		//Life0かスコア100で終了
+		if (Score >= 100)
+		{
+			PlaySoundFile("se_dosun_2.mp3", DX_PLAYTYPE_BACK);
+			WaitTimer(2000);
+			ClearDrawScreen();
+
+			Color = GetColor(255, 255, 0);
+			ChangeFont("Impact");
+			SetFontSize(64);
+			SetFontThickness(10);
+			DrawWidth = GetDrawFormatStringWidth("GAME CLEAR");
+			DrawFormatString((640 - DrawWidth) / 2, 176, Color, "GAME CLEAR");
+
+			Color = GetColor(255,255,255);
+			PlaySoundFile("coingame.mp3", DX_PLAYTYPE_BACK);
+			ScreenFlip();
+
+			WaitTimer(1600);
+			SetFontSize(36);
+			SetFontThickness(6);
+			DrawWidth = GetDrawFormatStringWidth("Press Enter Key");
+			DrawFormatString((640 - DrawWidth) / 2, 295, Color, "Press Enter Key");
+			ScreenFlip();
+			
+			while (CheckHitKey(KEY_INPUT_RETURN) == 0)
+			{
+
+			}
+			break;
+		}
+		else if (Life <= 0)
+		{
+			PlaySoundFile("se_hit_008.wav", DX_PLAYTYPE_BACK);
+			WaitTimer(2200);
+			ClearDrawScreen();
+			
+			Color = GetColor(255, 0, 0);
+			ChangeFont("Impact");
+			SetFontSize(64);
+			SetFontThickness(10);
+			DrawWidth = GetDrawFormatStringWidth("GAME OVER");
+			DrawFormatString((640 - DrawWidth) / 2, 176, Color, "GAME OVER");
+
+
+			Color = GetColor(255,255,255);
+			SetFontSize(48);
+			SetFontThickness(8);
+			DrawWidth= GetDrawFormatStringWidth("Your score is %d",Score );
+			DrawFormatString((640 - DrawWidth) / 2, 240, Color, "Your score is %d", Score);
+
+			PlaySoundFile("jingle_original_curse_002.wav", DX_PLAYTYPE_BACK);
+			ScreenFlip();
+
+			WaitTimer(1300);
+			SetFontSize(36);
+			SetFontThickness(6);
+			DrawWidth = GetDrawFormatStringWidth("Press Enter Key");
+			DrawFormatString((640 - DrawWidth) / 2, 295, Color, "Press Enter Key");
+			ScreenFlip();
+
+			while (CheckHitKey(KEY_INPUT_RETURN) == 0)
+			{
+
+			}
+			break;
+
+		} 
+
+		// Windows 特有の面倒な処理をＤＸライブラリにやらせる
+		// -1 が返ってきたらループを抜ける
+		if (ProcessMessage() < 0) break;
+		if (CheckHitKey(KEY_INPUT_ESCAPE))break;
+	}
+	DxLib_End();				// ＤＸライブラリ使用の終了処理
+	return 0;				// ソフトの終了 
+}
